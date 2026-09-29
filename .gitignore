@@ -132,6 +132,31 @@ dmypy.json
 models/*
 data/*
 runs/*
+logs/*
+pretrained/
+*.pth
+!weights/*.pth
+*.pkl
+output/
+aghri_dataset/
+aghri_pkls/
+aghri_pkls_source/
+.pip/
+.cache/
+.runtime_home/
+wheelhouse/
+*.whl
+*.sif
+*.simg
+*.squashfs
+*.sbatch.out
+*.sbatch.err
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.env.local
 
 # torch hipify generated files
 *_hip.*

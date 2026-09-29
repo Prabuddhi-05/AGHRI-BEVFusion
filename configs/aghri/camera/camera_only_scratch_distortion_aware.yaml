@@ -1,0 +1,8 @@
+# C1-DA: public experiment.
+model:
+  encoders:
+    camera:
+      backbone:
+        init_cfg: null
+      vtransform:
+        distortion_aware: true

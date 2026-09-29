@@ -1,0 +1,23 @@
+# Shared three-fisheye camera-only architecture and preprocessing.
+expected_camera_order:
+  - cam_fish_front
+  - cam_fish_left
+  - cam_fish_right
+
+input_modality:
+  use_lidar: false
+  use_camera: true
+  use_radar: false
+  use_map: false
+  use_external: false
+
+train_resize: [1.10, 1.15]
+eval_resize: [1.10, 1.10]
+
+model:
+  encoders:
+    lidar: null
+  fuser: null
+  decoder:
+    backbone:
+      in_channels: 80

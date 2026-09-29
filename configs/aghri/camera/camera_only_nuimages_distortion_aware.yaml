@@ -1,0 +1,10 @@
+# C2-DA: public experiment.
+model:
+  encoders:
+    camera:
+      backbone:
+        init_cfg:
+          type: Pretrained
+          checkpoint: pretrained/swint-nuimages-pretrained.pth
+      vtransform:
+        distortion_aware: true

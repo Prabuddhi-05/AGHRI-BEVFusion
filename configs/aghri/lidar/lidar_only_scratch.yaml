@@ -1,0 +1,11 @@
+# L1: public experiment. No checkpoint is loaded.
+load_from: null
+resume_from: null
+
+# Saved L1 run predates the later all-epochs checkpoint/log defaults.
+checkpoint_config:
+  interval: 1
+  max_keep_ckpts: 3
+
+log_config:
+  interval: 50

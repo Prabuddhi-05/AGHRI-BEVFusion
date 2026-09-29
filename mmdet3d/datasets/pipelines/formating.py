@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# AGHRI adaptation: this upstream module includes AGHRI-specific changes.
 import numpy as np
 from mmcv.parallel import DataContainer as DC
 
@@ -186,7 +187,13 @@ class Collect3D:
         for key in self.meta_keys:
             if key in results:
                 val = np.array(results[key])
-                if isinstance(results[key], list):
+                if key in {
+                    "camera_distortion_models",
+                    "camera_distortion_coefficients",
+                }:
+                    # Fixed-shape calibration tensors must not receive image padding.
+                    data[key] = DC(to_tensor(val), stack=True, pad_dims=None)
+                elif isinstance(results[key], list):
                     data[key] = DC(to_tensor(val), stack=True)
                 else:
                     data[key] = DC(to_tensor(val), stack=True, pad_dims=1)

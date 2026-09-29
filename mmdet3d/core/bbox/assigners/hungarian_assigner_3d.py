@@ -1,3 +1,4 @@
+# AGHRI adaptation: this upstream module includes AGHRI-specific changes.
 import torch
 
 from mmdet3d.core.bbox.util import normalize_bbox
@@ -104,6 +105,10 @@ class HungarianAssigner3D(BaseAssigner):
 
         # weighted sum of above two costs
         cost = cls_cost + reg_cost
+
+        # Retain the finite-cost guard used for the AGHRI training runs.
+        big = torch.finfo(cost.dtype).max / 4
+        cost = torch.where(torch.isfinite(cost), cost, torch.full_like(cost, big))
 
         # 3. do Hungarian matching on CPU using linear_sum_assignment
         cost = cost.detach().cpu()

@@ -1,3 +1,4 @@
+# AGHRI adaptation: this upstream module includes AGHRI-specific changes.
 from typing import Tuple
 
 import torch
@@ -212,6 +213,7 @@ class BaseTransform(nn.Module):
             post_trans,
             extra_rots=extra_rots,
             extra_trans=extra_trans,
+            **kwargs,
         )
         mats_dict = {
             'intrin_mats': camera_intrinsics, 

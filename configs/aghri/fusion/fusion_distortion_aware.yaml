@@ -1,0 +1,6 @@
+# F2: public experiment. Initialization matches F1; only LSS differs.
+model:
+  encoders:
+    camera:
+      vtransform:
+        distortion_aware: true

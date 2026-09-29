@@ -1,3 +1,4 @@
+# AGHRI adaptation: this upstream module includes AGHRI-specific changes.
 import tempfile
 from os import path as osp
 from typing import Any, Dict
@@ -13,6 +14,19 @@ from mmdet.datasets import DATASETS
 
 from ..core.bbox import LiDARInstance3DBoxes
 from .custom_3d import Custom3DDataset
+
+
+CAMERA_DISTORTION_MODEL_CODES = {
+    "pinhole": 0,
+    "none": 0,
+    "rational_polynomial": 1,
+    "equidistant": 2,
+}
+CAMERA_DISTORTION_ORDERS = {
+    "rational_polynomial": ["k1", "k2", "p1", "p2", "k3", "k4", "k5", "k6"],
+    "equidistant": ["k1", "k2", "k3", "k4"],
+}
+MAX_CAMERA_DISTORTION_COEFFICIENTS = 8
 
 
 @DATASETS.register_module()
@@ -243,6 +257,8 @@ class NuScenesDataset(Custom3DDataset):
             data["camera2ego"] = []
             data["camera_intrinsics"] = []
             data["camera2lidar"] = []
+            data["camera_distortion_models"] = []
+            data["camera_distortion_coefficients"] = []
 
             for _, camera_info in info["cams"].items():
                 data["image_paths"].append(camera_info["data_path"])
@@ -259,8 +275,54 @@ class NuScenesDataset(Custom3DDataset):
 
                 # camera intrinsics
                 camera_intrinsics = np.eye(4).astype(np.float32)
-                camera_intrinsics[:3, :3] = camera_info["cam_intrinsic"]
+                # AGHRI metadata may use camera_intrinsics instead of the
+                # standard nuScenes cam_intrinsic key.
+                if "cam_intrinsic" in camera_info:
+                    intrinsic_matrix = np.asarray(camera_info["cam_intrinsic"])
+                elif "camera_intrinsics" in camera_info:
+                    intrinsic_matrix = np.asarray(camera_info["camera_intrinsics"])
+                else:
+                    raise KeyError("Camera intrinsics missing from camera_info")
+                if intrinsic_matrix.shape != (3, 3):
+                    raise ValueError("Expected 3x3 camera intrinsics")
+                camera_intrinsics[:3, :3] = intrinsic_matrix
                 data["camera_intrinsics"].append(camera_intrinsics)
+
+                # Distortion is used by AGHRILSSTransform for raw AGHRI images.
+                # Ordinary nuScenes records have no extension fields and stay
+                # pinhole by default.
+                distortion_model = camera_info.get("distortion_model", "pinhole")
+                if distortion_model not in CAMERA_DISTORTION_MODEL_CODES:
+                    raise ValueError(
+                        f"Unsupported camera distortion model: {distortion_model}"
+                    )
+                coefficients = np.asarray(
+                    camera_info.get("distortion_coefficients", []), dtype=np.float32
+                ).reshape(-1)
+                expected_order = CAMERA_DISTORTION_ORDERS.get(
+                    distortion_model, []
+                )
+                coefficient_order = list(
+                    camera_info.get("distortion_coefficient_order", expected_order)
+                )
+                if coefficient_order != expected_order:
+                    raise ValueError(
+                        f"Unexpected {distortion_model} coefficient order: "
+                        f"{coefficient_order}; expected {expected_order}"
+                    )
+                if len(coefficients) != len(expected_order):
+                    raise ValueError(
+                        f"{distortion_model} requires {len(expected_order)} "
+                        f"coefficients, found {len(coefficients)}"
+                    )
+                padded_coefficients = np.zeros(
+                    MAX_CAMERA_DISTORTION_COEFFICIENTS, dtype=np.float32
+                )
+                padded_coefficients[: len(coefficients)] = coefficients
+                data["camera_distortion_models"].append(
+                    CAMERA_DISTORTION_MODEL_CODES[distortion_model]
+                )
+                data["camera_distortion_coefficients"].append(padded_coefficients)
 
                 # lidar to image transform
                 lidar2image = camera_intrinsics @ lidar2camera_rt.T

@@ -1,0 +1,19 @@
+# Shared LiDAR-only architecture. ZED image batch fields remain required by
+# the existing BEVFusion forward API, but the camera encoder is disabled.
+expected_camera_order:
+  - cam_zed_rgb
+
+input_modality:
+  use_lidar: true
+  use_camera: true
+  use_radar: false
+  use_map: false
+  use_external: false
+
+train_resize: [1.05, 1.10]
+eval_resize: [1.05, 1.05]
+
+model:
+  encoders:
+    camera: null
+  fuser: null

@@ -1,0 +1,10 @@
+# Shared three-fisheye + LiDAR architecture and preprocessing.
+# Fusion runs use six epochs; camera-only and LiDAR-only inherit 20 epochs.
+max_epochs: 6
+expected_camera_order:
+  - cam_fish_front
+  - cam_fish_left
+  - cam_fish_right
+
+train_resize: [1.10, 1.15]
+eval_resize: [1.10, 1.10]

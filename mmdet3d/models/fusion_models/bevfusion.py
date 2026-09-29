@@ -1,3 +1,4 @@
+# AGHRI adaptation: this upstream module includes AGHRI-specific changes.
 from typing import Any, Dict
 
 import torch
@@ -115,6 +116,8 @@ class BEVFusion(Base3DFusionModel):
         camera2lidar,
         img_aug_matrix,
         lidar_aug_matrix,
+        camera_distortion_models,
+        camera_distortion_coefficients,
         img_metas,
         gt_depths=None,
     ) -> torch.Tensor:
@@ -142,7 +145,9 @@ class BEVFusion(Base3DFusionModel):
             camera2lidar,
             img_aug_matrix,
             lidar_aug_matrix,
-            img_metas,
+            metas=img_metas,
+            camera_distortion_models=camera_distortion_models,
+            camera_distortion_coefficients=camera_distortion_coefficients,
             depth_loss=self.use_depth_loss, 
             gt_depths=gt_depths,
         )
@@ -240,7 +245,9 @@ class BEVFusion(Base3DFusionModel):
         img_aug_matrix,
         lidar_aug_matrix,
         metas,
-        depths,
+        camera_distortion_models=None,
+        camera_distortion_coefficients=None,
+        depths=None,
         radar=None,
         gt_masks_bev=None,
         gt_bboxes_3d=None,
@@ -262,6 +269,8 @@ class BEVFusion(Base3DFusionModel):
                 img_aug_matrix,
                 lidar_aug_matrix,
                 metas,
+                camera_distortion_models,
+                camera_distortion_coefficients,
                 depths,
                 radar,
                 gt_masks_bev,
@@ -285,6 +294,8 @@ class BEVFusion(Base3DFusionModel):
         img_aug_matrix,
         lidar_aug_matrix,
         metas,
+        camera_distortion_models=None,
+        camera_distortion_coefficients=None,
         depths=None,
         radar=None,
         gt_masks_bev=None,
@@ -310,6 +321,8 @@ class BEVFusion(Base3DFusionModel):
                     camera2lidar,
                     img_aug_matrix,
                     lidar_aug_matrix,
+                    camera_distortion_models,
+                    camera_distortion_coefficients,
                     metas,
                     gt_depths=depths,
                 )

@@ -1,0 +1,14 @@
+# D-F1 through D-F4: six-epoch public fusion experiment.
+# The launcher builds a branch-only initialization checkpoint in run output.
+max_epochs: 6
+
+model:
+  encoders:
+    camera:
+      backbone:
+        init_cfg: null
+      vtransform:
+        distortion_aware: true
+
+load_from: null
+resume_from: null

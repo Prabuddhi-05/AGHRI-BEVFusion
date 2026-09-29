@@ -1,0 +1,4 @@
+# L2: public experiment. The launcher passes the external LiDAR detector
+# to train_aghri.py's compatible-weight loader, not the MMCV load_from hook.
+load_from: null
+resume_from: null

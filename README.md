@@ -1,223 +1,260 @@
-# BEVFusion
+# AGHRI-BEVFusion
 
-### [website](http://bevfusion.mit.edu/) | [paper](https://arxiv.org/abs/2205.13542) | [video](https://www.youtube.com/watch?v=uCAka90si9E)
+**AGHRI-BEVFusion** adapts [MIT-HAN-Lab BEVFusion](https://github.com/mit-han-lab/bevfusion) for 3D human detection on the **AGHRI** dataset.
 
-![demo](assets/demo.gif)
+AGHRI is a multimodal dataset for robot perception of humans in agricultural and off-road environments. It includes synchronized ZED RGB, fisheye camera, LiDAR, calibration, pose, and human-annotation data collected for close-proximity human–robot perception. This repository uses the **AGHRI-to-nuScenes-style representation** of the dataset to provide the data structure and PKLs required by the adapted BEVFusion pipeline.
 
-## News
+<p align="center">
+  <img src="assets/aghri_fisheye_lidar_overview.png"
+       alt="Fisheye views and fused BEV on LiDAR"
+       width="700">
+</p>
 
-- **(2024/5)** BEVFusion is integrated into NVIDIA [DeepStream](https://developer.nvidia.com/blog/nvidia-deepstream-7-0-milestone-release-for-next-gen-vision-ai-development/) for sensor fusion.
-- **(2023/5)** NVIDIA provides a [TensorRT deployment solution](https://github.com/NVIDIA-AI-IOT/Lidar_AI_Solution/tree/master/CUDA-BEVFusion) of BEVFusion, achieving 25 FPS on Jetson Orin.
-- **(2023/4)** BEVFusion ranks first on [Argoverse](https://eval.ai/web/challenges/challenge-page/1710/overview) 3D object detection leaderboard among all solutions.
-- **(2023/1)** BEVFusion is integrated into [MMDetection3D](https://github.com/open-mmlab/mmdetection3d/tree/main/projects/BEVFusion).
-- **(2023/1)** BEVFusion is accepted to ICRA 2023!
-- **(2022/8)** BEVFusion ranks first on [Waymo](https://waymo.com/open/challenges/2020/3d-detection/) 3D object detection leaderboard among all solutions.
-- **(2022/6)** BEVFusion ranks first on [nuScenes](https://nuscenes.org/tracking?externalData=all&mapData=all&modalities=Any) 3D object detection leaderboard among all solutions.
-- **(2022/6)** BEVFusion ranks first on [nuScenes](https://nuscenes.org/object-detection?externalData=all&mapData=all&modalities=Any) 3D object detection leaderboard among all solutions.
+<p align="center">
+  <em>Figure 1. Front, left, and right fisheye views with fused detections on the LiDAR bird’s-eye view.</em>
+</p>
 
-## Abstract
+## Resources
 
-Multi-sensor fusion is essential for an accurate and reliable autonomous driving system. Recent approaches are based on point-level fusion: augmenting the LiDAR point cloud with camera features. However, the camera-to-LiDAR projection throws away the semantic density of camera features, hindering the effectiveness of such methods, especially for semantic-oriented tasks (such as 3D scene segmentation). In this paper, we break this deeply-rooted convention with BEVFusion, an efficient and generic multi-task multi-sensor fusion framework. It unifies multi-modal features in the shared bird's-eye view (BEV) representation space, which nicely preserves both geometric and semantic information. To achieve this, we diagnose and lift key efficiency bottlenecks in the view transformation with optimized BEV pooling, reducing latency by more than **40x**. BEVFusion is fundamentally task-agnostic and seamlessly supports different 3D perception tasks with almost no architectural changes. It establishes the new state of the art on the nuScenes benchmark, achieving **1.3%** higher mAP and NDS on 3D object detection and **13.6%** higher mIoU on BEV map segmentation, with **1.9x** lower computation cost.
+- [Original AGHRI dataset](https://doi.org/10.24385/lincoln.32982638) and [submitted manuscript/preprint](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7360013)
+- [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools) — AGHRI-to-nuScenes-style conversion and PKL generation
+- [AGHRI-nuScenes-release](https://github.com/Prabuddhi-05/AGHRI-nuScenes-release) — prepared AGHRI-to-nuScenes-style data and PKLs
+- [Original BEVFusion](https://github.com/mit-han-lab/bevfusion) — upstream framework, installation guidance, and pretrained-model information
 
-## Results
+## What is Included
 
-### 3D Object Detection (on Waymo test)
+The upstream BEVFusion architecture remains the base of this repository. The AGHRI adaptation adds:
 
-|   Model   | mAP-L1 | mAPH-L1  | mAP-L2  | mAPH-L2  |
-| :-------: | :------: | :--: | :--: | :--: |
-| [BEVFusion](https://waymo.com/open/challenges/entry/?challenge=DETECTION_3D&challengeId=DETECTION_3D&emailId=f58eed96-8bb3&timestamp=1658347965704580) |    82.72   |  81.35  | 77.65  |  76.33 |
-| [BEVFusion-TTA](https://waymo.com/open/challenges/entry/?challenge=DETECTION_3D&challengeId=DETECTION_3D&emailId=94ddc185-d2ce&timestamp=1663562767759105) | 86.04    |  84.76 | 81.22  |  79.97 |
+- an AGHRI dataset loader and one-class `human` evaluator;
+- raw ZED RGB and fisheye image loading;
+- camera-only, LiDAR-only, and camera–LiDAR fusion configurations;
+- standard pinhole and distortion-aware LSS geometry;
+- support for ZED `rational_polynomial` and fisheye `equidistant` camera models;
+- compatible checkpoint transfer for pretrained and AGHRI-trained branches;
+- AGHRI experiment configs under [`configs/aghri/`](configs/aghri/); and
+- a portable experiment launcher at [`tools/run_aghri.py`](tools/run_aghri.py).
 
-Here, BEVFusion only uses a single model without any test time augmentation. BEVFusion-TTA uses single model with test-time augmentation and no model ensembling is applied. 
+Detailed information is available in:
 
-### 3D Object Detection (on nuScenes test)
+- [AGHRI adaptation](docs/AGHRI_ADAPTATION.md)
+- [Experiment mapping](docs/EXPERIMENTS.md)
+- [Training and evaluation](docs/TRAINING_AND_EVALUATION.md)
 
-|   Model   | Modality | mAP  | NDS  |
-| :-------: | :------: | :--: | :--: |
-| BEVFusion-e |   C+L    | 74.99 | 76.09 |
-| BEVFusion |   C+L    | 70.23 | 72.88 |
-| BEVFusion-base* |   C+L    | 71.72 | 73.83 |
+## Installation
 
-*: We scaled up MACs of the model to match the computation cost of concurrent work.
+Use a BEVFusion-compatible Python/CUDA environment with PyTorch, MMCV, MMDetection, MMDetection3D dependencies, TorchPack, OpenMPI/mpi4py, and the required CUDA extensions.
 
-### 3D Object Detection (on nuScenes validation)
-
-|        Model         | Modality | mAP  | NDS  | Checkpoint  |
-| :------------------: | :------: | :--: | :--: | :---------: |
-|    [BEVFusion](configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml)       |   C+L    | 68.52 | 71.38 | [Link](https://www.dropbox.com/scl/fi/ulaz9z4wdwtypjhx7xdi3/bevfusion-det.pth?rlkey=ovusfi2rchjub5oafogou255v&dl=1) |
-| [Camera-Only Baseline](configs/nuscenes/det/centerhead/lssfpn/camera/256x704/swint/default.yaml) |    C     | 35.56 | 41.21 | [Link](https://www.dropbox.com/scl/fi/pxfaz1nc07qa2twlatzkz/camera-only-det.pth?rlkey=f5do81fawie0ssbg9uhrm6p30&dl=1) |
-| [LiDAR-Only Baseline](configs/nuscenes/det/transfusion/secfpn/lidar/voxelnet_0p075.yaml)  |    L     | 64.68 | 69.28 | [Link](https://www.dropbox.com/scl/fi/b1zvgrg9ucmv0wtx6pari/lidar-only-det.pth?rlkey=fw73bmdh57jxtudw6osloywah&dl=1) |
-
-*Note*: The camera-only object detection baseline is a variant of BEVDet-Tiny with a much heavier view transformer and other differences in hyperparameters. Thanks to our [efficient BEV pooling](mmdet3d/ops/bev_pool) operator, this model runs fast and has higher mAP than BEVDet-Tiny under the same input resolution. Please refer to [BEVDet repo](https://github.com/HuangJunjie2017/BEVDet) for the original BEVDet-Tiny implementation. The LiDAR-only baseline is TransFusion-L.
-
-### BEV Map Segmentation (on nuScenes validation)
-
-|        Model         | Modality | mIoU | Checkpoint  |
-| :------------------: | :------: | :--: | :---------: |
-| [BEVFusion](configs/nuscenes/seg/fusion-bev256d2-lss.yaml)       |   C+L    | 62.95 | [Link](https://www.dropbox.com/scl/fi/8lgd1hkod2a15mwry0fvd/bevfusion-seg.pth?rlkey=2tmgw7mcrlwy9qoqeui63tay9&dl=1) |
-| [Camera-Only Baseline](configs/nuscenes/seg/camera-bev256d2.yaml) |    C     | 57.09 | [Link](https://www.dropbox.com/scl/fi/cwpcu80n0shmwraegi6z4/camera-only-seg.pth?rlkey=l60kdaz19fq3gwocsjk09e60z&dl=1) |
-| [LiDAR-Only Baseline](configs/nuscenes/seg/lidar-centerpoint-bev128.yaml)  |    L     | 48.56 | [Link](https://www.dropbox.com/scl/fi/mi3w6uxvytdre9i42r9k7/lidar-only-seg.pth?rlkey=rve7hx80u3en1gfoi7tjucl72&dl=1) |
-
-## Usage
-
-### Prerequisites
-
-The code is built with following libraries:
-
-- Python >= 3.8, \<3.9
-- OpenMPI = 4.0.4 and mpi4py = 3.0.3 (Needed for torchpack)
-- Pillow = 8.4.0 (see [here](https://github.com/mit-han-lab/bevfusion/issues/63))
-- [PyTorch](https://github.com/pytorch/pytorch) >= 1.9, \<= 1.10.2
-- [tqdm](https://github.com/tqdm/tqdm)
-- [torchpack](https://github.com/mit-han-lab/torchpack)
-- [mmcv](https://github.com/open-mmlab/mmcv) = 1.4.0
-- [mmdetection](http://github.com/open-mmlab/mmdetection) = 2.20.0
-- [nuscenes-dev-kit](https://github.com/nutonomy/nuscenes-devkit)
-
-After installing these dependencies, please run this command to install the codebase:
+Follow the [upstream BEVFusion installation instructions](https://github.com/mit-han-lab/bevfusion#usage), then install this checkout in that environment:
 
 ```bash
 python setup.py develop
 ```
 
-We also provide a [Dockerfile](docker/Dockerfile) to ease environment setup. To get started with docker, please make sure that `nvidia-docker` is installed on your machine. After that, please execute the following command to build the docker image:
+The `weights/` folder contains five AGHRI checkpoints configured for Git LFS; see the [checkpoint manifest](weights/README.md).
+
+## AGHRI Data Setup
+
+Prepare the converted dataset using [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools), or obtain the prepared [AGHRI-nuScenes-release](https://github.com/Prabuddhi-05/AGHRI-nuScenes-release).
+
+The expected layout is:
+
+```text
+AGHRI-nuScenes-release/
+├── dataset/
+│   ├── samples/
+│   ├── sweeps/
+│   ├── v1.0-aghri/
+│   └── metadata/
+└── pkls/
+    ├── full/
+    │   └── pkls/
+    ├── zed_lidar/
+    │   └── pkls/
+    └── fisheye_lidar/
+        └── pkls/
+```
+
+Pass the dataset and PKL roots to the launcher:
+
+```text
+--dataset-root /path/to/AGHRI-nuScenes-release/dataset
+--pkl-root /path/to/AGHRI-nuScenes-release/pkls
+```
+
+Fisheye camera and fusion experiments use `fisheye_lidar/pkls/`.
+
+## Pretrained Weights
+
+Pretrained binaries are not included in this repository. Place the upstream weights at:
+
+```text
+pretrained/
+├── swint-nuimages-pretrained.pth  # nuImages-pretrained Swin camera backbone
+└── lidar-only-det.pth             # nuScenes-pretrained LiDAR detector
+```
+
+For their original sources and usage terms, see [MIT-HAN-Lab BEVFusion](https://github.com/mit-han-lab/bevfusion).
+
+The launcher also accepts `--camera-pretrained-checkpoint` and `--lidar-pretrained-checkpoint` to use checkpoints stored elsewhere.
+
+### AGHRI Checkpoints
+
+The `weights/` directory can hold the AGHRI-trained unimodal checkpoints used by D-F4 and selected complete fusion checkpoints:
+
+```text
+weights/
+├── C2-DA_best_epoch_20.pth
+├── L2_best_epoch_1.pth
+├── F1_best_epoch_1.pth
+├── F2_best_epoch_1.pth
+└── D-F4_best_epoch_1.pth
+```
+
+- **C2-DA** — AGHRI-trained, nuImages-initialized camera-only model with distortion-aware LSS.
+- **L2** — AGHRI-trained, nuScenes-initialized LiDAR-only model.
+- **F1** — camera–LiDAR fusion with standard pinhole LSS.
+- **F2** — camera–LiDAR fusion with distortion-aware LSS.
+- **D-F4** — distortion-aware fusion initialized from the C2-DA and L2 checkpoints above.
+
+See the [checkpoint manifest](weights/README.md) for each file and config. The five `.pth` files are configured for Git LFS; once published to GitHub, install Git LFS and run `git lfs pull` after cloning if they were not fetched automatically.
+
+## AGHRI Test Results
+
+These tables summarize held-out AGHRI test results. Bold marks the best value for each metric within its table.
+
+### Camera-only
+
+| Model | mAP ↑ | mATE ↓ | mASE ↓ | mAVE ↓ |
+|---|---:|---:|---:|---:|
+| C1-Pinhole | 0.5226 | 0.8529 | 0.3521 | 0.7138 |
+| C1-DA | 0.6417 | 0.7352 | 0.3632 | **0.6388** |
+| C2-Pinhole | 0.8714 | 0.4098 | **0.3358** | 0.6935 |
+| C2-DA | **0.8731** | **0.3855** | 0.3398 | 0.7160 |
+
+### LiDAR-only
+
+| Model | mAP ↑ | mATE ↓ | mASE ↓ | mAVE ↓ |
+|---|---:|---:|---:|---:|
+| L1 | 0.9464 | 0.1513 | **0.3082** | 0.6508 |
+| L2 | **0.9548** | **0.1092** | 0.3191 | **0.6382** |
+
+### Selected fusion checkpoints
+
+| Model | mAP ↑ | mATE ↓ | mASE ↓ | mAVE ↓ |
+|---|---:|---:|---:|---:|
+| F1 | 0.9450 | 0.1446 | 0.3155 | 0.6359 |
+| F2 | 0.9510 | 0.1368 | 0.3282 | **0.6329** |
+| D-F4 | **0.9575** | **0.1126** | **0.3117** | 0.6526 |
+
+Experiment definitions and geometry settings are in [EXPERIMENTS.md](docs/EXPERIMENTS.md).
+
+## Quick Start
+
+Run commands from the repository root. Replace the example paths with your assembled AGHRI release.
+
+Add `--dry-run` first if you want to inspect the selected config, PKLs, checkpoints, and underlying command without launching a job.
+
+### Camera-only
+
+`C2-DA` fine-tunes the nuImages-pretrained camera backbone on AGHRI using distortion-aware fisheye LSS:
 
 ```bash
-cd docker && docker build . -t bevfusion
+python tools/run_aghri.py train --experiment C2-DA \
+  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
+  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --run-dir runs/C2-DA \
+  --gpus 4
 ```
 
-We can then run the docker with the following command:
+### LiDAR-only
+
+`L2` fine-tunes the nuScenes-pretrained LiDAR model on AGHRI:
 
 ```bash
-nvidia-docker run -it -v `pwd`/../data:/dataset --shm-size 16g bevfusion /bin/bash
+python tools/run_aghri.py train --experiment L2 \
+  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
+  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --run-dir runs/L2 \
+  --gpus 4
 ```
 
-We recommend the users to run data preparation (instructions are available in the next section) outside the docker if possible. Note that the dataset directory should be an absolute path. Within the docker, please run the following command to clone our repo and install custom CUDA extensions:
+### Distortion-aware Fusion
+
+After training the required AGHRI camera and LiDAR branches, they can be combined for a D-F experiment.
+
+For example, `D-F4` uses the AGHRI `C2-DA` camera checkpoint together with the AGHRI `L2` LiDAR checkpoint:
 
 ```bash
-cd home && git clone https://github.com/mit-han-lab/bevfusion && cd bevfusion
-python setup.py develop
+python tools/run_aghri.py train --experiment D-F4 \
+  --camera-checkpoint weights/C2-DA_best_epoch_20.pth \
+  --lidar-checkpoint weights/L2_best_epoch_1.pth \
+  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
+  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --run-dir runs/D-F4 \
+  --gpus 4
 ```
 
-You can then create a symbolic link `data` to the `/dataset` directory in the docker.
+The launcher builds the required branch initialization and then starts the normal AGHRI training entrypoint.
 
-### Data Preparation
+See [Experiments](docs/EXPERIMENTS.md) for C1/C2, L1/L2, F1/F2, and D-F1–D-F4.
 
-#### nuScenes
+## Evaluation
 
-Please follow the instructions from [here](https://github.com/open-mmlab/mmdetection3d/blob/master/docs/en/datasets/nuscenes_det.md) to download and preprocess the nuScenes dataset. Please remember to download both detection dataset and the map extension (for BEV map segmentation). After data preparation, you will be able to see the following directory structure (as is indicated in mmdetection3d):
-
-```
-mmdetection3d
-├── mmdet3d
-├── tools
-├── configs
-├── data
-│   ├── nuscenes
-│   │   ├── maps
-│   │   ├── samples
-│   │   ├── sweeps
-│   │   ├── v1.0-test
-|   |   ├── v1.0-trainval
-│   │   ├── nuscenes_database
-│   │   ├── nuscenes_infos_train.pkl
-│   │   ├── nuscenes_infos_val.pkl
-│   │   ├── nuscenes_infos_test.pkl
-│   │   ├── nuscenes_dbinfos_train.pkl
-
-```
-
-### Evaluation
-
-We also provide instructions for evaluating our pretrained models. Please download the checkpoints using the following script: 
+Choose the validation or test split explicitly:
 
 ```bash
-./tools/download_pretrained.sh
+python tools/run_aghri.py eval --experiment D-F4 \
+  --checkpoint weights/D-F4_best_epoch_1.pth \
+  --split test \
+  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
+  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --gpus 1
 ```
 
-Then, you will be able to run:
+The AGHRI evaluator reports:
+
+- AGHRI mAP;
+- translation error;
+- scale error; and
+- velocity error as a secondary diagnostic.
+
+See the [training and evaluation guide](docs/TRAINING_AND_EVALUATION.md) for metric details and the underlying TorchPack commands.
+
+## Visualization
+
+The [AGHRI visualizer](tools/visualize_aghri.py) supports ground-truth and prediction visualization using the AGHRI fisheye data and LiDAR BEV view.
+
+Example prediction visualization:
 
 ```bash
-torchpack dist-run -np [number of gpus] python tools/test.py [config file path] pretrained/[checkpoint name].pth --eval [evaluation type]
+torchpack dist-run -np 1 python tools/visualize_aghri.py \
+  configs/aghri/fusion/fusion_distortion_aware_df.yaml \
+  --mode pred \
+  --checkpoint weights/D-F4_best_epoch_1.pth \
+  --split test \
+  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
+  --ann-file /path/to/AGHRI-nuScenes-release/pkls/fisheye_lidar/pkls/aghri_fisheye_lidar_infos_test.pkl \
+  --out-dir output/aghri_D-F4_test \
+  --max-samples 10
 ```
 
-For example, if you want to evaluate the detection variant of BEVFusion, you can try:
+## Documentation
 
-```bash
-torchpack dist-run -np 8 python tools/test.py configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml pretrained/bevfusion-det.pth --eval bbox
-```
+For more detail, see:
 
-While for the segmentation variant of BEVFusion, this command will be helpful:
+- [`docs/AGHRI_ADAPTATION.md`](docs/AGHRI_ADAPTATION.md) — AGHRI dataset integration, camera geometry, modality-specific changes, and evaluation
+- [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) — C1/C2, L1/L2, F1/F2, and D-F1–D-F4 experiment definitions
+- [`docs/TRAINING_AND_EVALUATION.md`](docs/TRAINING_AND_EVALUATION.md) — training, evaluation, checkpoint initialization, launcher usage, and underlying TorchPack commands
 
-```bash
-torchpack dist-run -np 8 python tools/test.py configs/nuscenes/seg/fusion-bev256d2-lss.yaml pretrained/bevfusion-seg.pth --eval map
-```
+## Attribution and Citation
 
-### Training
+This repository is based on [MIT-HAN-Lab BEVFusion](https://github.com/mit-han-lab/bevfusion). The upstream Apache-2.0 [LICENSE](LICENSE) and source attribution are preserved.
 
-We provide instructions to reproduce our results on nuScenes.
+This adaptation is designed for:
 
-For example, if you want to train the camera-only variant for object detection, please run:
+**AGHRI: A dataset for multimodal robot perception of humans in agricultural and off-road environments**
 
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/det/centerhead/lssfpn/camera/256x704/swint/default.yaml --model.encoders.camera.backbone.init_cfg.checkpoint pretrained/swint-nuimages-pretrained.pth
-```
+- **Original dataset:** [University of Lincoln Research Repository](https://doi.org/10.24385/lincoln.32982638)
+- **Submitted manuscript / preprint:** [SSRN](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7360013)
 
-For camera-only BEV segmentation model, please run:
-
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/seg/camera-bev256d2.yaml --model.encoders.camera.backbone.init_cfg.checkpoint pretrained/swint-nuimages-pretrained.pth
-```
-
-For LiDAR-only detector, please run:
-
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/det/transfusion/secfpn/lidar/voxelnet_0p075.yaml
-```
-
-For LiDAR-only BEV segmentation model, please run:
-
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/seg/lidar-centerpoint-bev128.yaml
-```
-
-For BEVFusion detection model, please run:
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml --model.encoders.camera.backbone.init_cfg.checkpoint pretrained/swint-nuimages-pretrained.pth --load_from pretrained/lidar-only-det.pth 
-```
-
-For BEVFusion segmentation model, please run:
-```bash
-torchpack dist-run -np 8 python tools/train.py configs/nuscenes/seg/fusion-bev256d2-lss.yaml --model.encoders.camera.backbone.init_cfg.checkpoint pretrained/swint-nuimages-pretrained.pth
-```
-
-Note: please run `tools/test.py` separately after training to get the final evaluation metrics.
-
-## Deployment on TensorRT
-[CUDA-BEVFusion](https://github.com/NVIDIA-AI-IOT/Lidar_AI_Solution/tree/master/CUDA-BEVFusion): Best practice for TensorRT, which provides INT8 acceleration solutions and achieves 25fps on ORIN.
-
-## FAQs
-
-Q: Can we directly use the info files prepared by mmdetection3d?
-
-A: We recommend re-generating the info files using this codebase since we forked mmdetection3d before their [coordinate system refactoring](https://github.com/open-mmlab/mmdetection3d/blob/master/docs/en/changelog.md).
-
-## Acknowledgements
-
-BEVFusion is based on [mmdetection3d](https://github.com/open-mmlab/mmdetection3d). It is also greatly inspired by the following outstanding contributions to the open-source community: [LSS](https://github.com/nv-tlabs/lift-splat-shoot), [BEVDet](https://github.com/HuangJunjie2017/BEVDet), [TransFusion](https://github.com/XuyangBai/TransFusion), [CenterPoint](https://github.com/tianweiy/CenterPoint), [MVP](https://github.com/tianweiy/MVP), [FUTR3D](https://arxiv.org/abs/2203.10642), [CVT](https://github.com/bradyz/cross_view_transformers) and [DETR3D](https://github.com/WangYueFt/detr3d). 
-
-Please also check out related papers in the camera-only 3D perception community such as [BEVDet4D](https://arxiv.org/abs/2203.17054), [BEVerse](https://arxiv.org/abs/2205.09743), [BEVFormer](https://arxiv.org/abs/2203.17270), [M2BEV](https://arxiv.org/abs/2204.05088), [PETR](https://arxiv.org/abs/2203.05625) and [PETRv2](https://arxiv.org/abs/2206.01256), which might be interesting future extensions to BEVFusion.
-
-
-## Citation
-
-If BEVFusion is useful or relevant to your research, please kindly recognize our contributions by citing our paper:
-
-```bibtex
-@inproceedings{liu2022bevfusion,
-  title={BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird's-Eye View Representation},
-  author={Liu, Zhijian and Tang, Haotian and Amini, Alexander and Yang, Xingyu and Mao, Huizi and Rus, Daniela and Han, Song},
-  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
-  year={2023}
-}
-```
+Please cite the original AGHRI dataset and associated manuscript where appropriate.

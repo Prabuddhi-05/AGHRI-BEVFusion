@@ -1,0 +1,430 @@
+# Shared AGHRI ZED/fisheye LiDAR-camera baseline.
+# Loaded together with configs/default.yaml by TorchPack recursive config loading.
+
+dataset_type: AGHRIDataset
+dataset_root: null
+train_ann_file: null
+val_ann_file: null
+test_ann_file: null
+expected_camera_order: []
+
+load_dim: 5
+use_dim: 5
+reduce_beams: null
+load_augmented: null
+
+# Metadata study (2026-09-15): all training human centres are within 19.2 m;
+# a 128-cloud sample placed 95% of LiDAR returns within 18.3 m. A symmetric
+# 24 m baseline preserves margin while reducing the inherited nuScenes grid.
+point_cloud_range: [-24.0, -24.0, -5.0, 24.0, 24.0, 3.0]
+voxel_size: [0.075, 0.075, 0.2]
+image_size: [256, 704]
+train_resize: null
+eval_resize: null
+
+object_classes:
+  - human
+
+input_modality:
+  use_lidar: true
+  use_camera: true
+  use_radar: false
+  use_map: false
+  use_external: false
+
+train_pipeline:
+  -
+    type: LoadAGHRIMultiViewImageFromFiles
+    enforce_equal_size: true
+  -
+    type: LoadPointsFromFile
+    coord_type: LIDAR
+    load_dim: ${load_dim}
+    use_dim: ${use_dim}
+    reduce_beams: ${reduce_beams}
+    load_augmented: ${load_augmented}
+  -
+    type: LoadAnnotations3D
+    with_bbox_3d: true
+    with_label_3d: true
+    with_attr_label: false
+  -
+    type: ImageAug3D
+    final_dim: ${image_size}
+    resize_lim: ${train_resize}
+    bot_pct_lim: [0.0, 0.0]
+    rot_lim: [0.0, 0.0]
+    rand_flip: false
+    is_train: true
+  -
+    type: GlobalRotScaleTrans
+    resize_lim: [1.0, 1.0]
+    rot_lim: [0.0, 0.0]
+    trans_lim: 0.0
+    is_train: true
+  -
+    type: PointsRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ObjectRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ObjectNameFilter
+    classes: ${object_classes}
+  -
+    type: ImageNormalize
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+  -
+    type: PointShuffle
+  -
+    type: DefaultFormatBundle3D
+    classes: ${object_classes}
+  -
+    type: Collect3D
+    keys:
+      - img
+      - points
+      - gt_bboxes_3d
+      - gt_labels_3d
+    meta_keys:
+      - camera_intrinsics
+      - camera_distortion_models
+      - camera_distortion_coefficients
+      - camera2ego
+      - lidar2ego
+      - lidar2camera
+      - camera2lidar
+      - lidar2image
+      - img_aug_matrix
+      - lidar_aug_matrix
+
+test_pipeline:
+  -
+    type: LoadAGHRIMultiViewImageFromFiles
+    enforce_equal_size: true
+  -
+    type: LoadPointsFromFile
+    coord_type: LIDAR
+    load_dim: ${load_dim}
+    use_dim: ${use_dim}
+    reduce_beams: ${reduce_beams}
+    load_augmented: ${load_augmented}
+  -
+    type: ImageAug3D
+    final_dim: ${image_size}
+    resize_lim: ${eval_resize}
+    bot_pct_lim: [0.0, 0.0]
+    rot_lim: [0.0, 0.0]
+    rand_flip: false
+    is_train: false
+  -
+    type: GlobalRotScaleTrans
+    resize_lim: [1.0, 1.0]
+    rot_lim: [0.0, 0.0]
+    trans_lim: 0.0
+    is_train: false
+  -
+    type: PointsRangeFilter
+    point_cloud_range: ${point_cloud_range}
+  -
+    type: ImageNormalize
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+  -
+    type: DefaultFormatBundle3D
+    classes: ${object_classes}
+    with_gt: false
+    with_label: false
+  -
+    type: Collect3D
+    keys:
+      - img
+      - points
+    meta_keys:
+      - camera_intrinsics
+      - camera_distortion_models
+      - camera_distortion_coefficients
+      - camera2ego
+      - lidar2ego
+      - lidar2camera
+      - camera2lidar
+      - lidar2image
+      - img_aug_matrix
+      - lidar_aug_matrix
+
+data:
+  # Conservative initial value for the four-A100 controlled run.
+  samples_per_gpu: 1
+  workers_per_gpu: 4
+  train:
+    type: ${dataset_type}
+    dataset_root: ${dataset_root}
+    ann_file: ${train_ann_file}
+    pipeline: ${train_pipeline}
+    object_classes: ${object_classes}
+    modality: ${input_modality}
+    test_mode: false
+    filter_empty_gt: true
+    use_valid_flag: true
+    expected_camera_order: ${expected_camera_order}
+    box_type_3d: LiDAR
+  val:
+    type: ${dataset_type}
+    dataset_root: ${dataset_root}
+    ann_file: ${val_ann_file}
+    pipeline: ${test_pipeline}
+    object_classes: ${object_classes}
+    modality: ${input_modality}
+    # Validation inference uses the test pipeline; GT is read by evaluate().
+    test_mode: true
+    filter_empty_gt: false
+    use_valid_flag: false
+    expected_camera_order: ${expected_camera_order}
+    box_type_3d: LiDAR
+  test:
+    type: ${dataset_type}
+    dataset_root: ${dataset_root}
+    ann_file: ${test_ann_file}
+    pipeline: ${test_pipeline}
+    object_classes: ${object_classes}
+    modality: ${input_modality}
+    test_mode: true
+    filter_empty_gt: false
+    use_valid_flag: false
+    expected_camera_order: ${expected_camera_order}
+    box_type_3d: LiDAR
+
+model:
+  type: BEVFusion
+  encoders:
+    camera:
+      backbone:
+        type: SwinTransformer
+        embed_dims: 96
+        depths: [2, 2, 6, 2]
+        num_heads: [3, 6, 12, 24]
+        window_size: 7
+        mlp_ratio: 4
+        qkv_bias: true
+        qk_scale: null
+        drop_rate: 0.0
+        attn_drop_rate: 0.0
+        drop_path_rate: 0.2
+        patch_norm: true
+        out_indices: [1, 2, 3]
+        with_cp: false
+        convert_weights: true
+        init_cfg:
+          type: Pretrained
+          checkpoint: pretrained/swint-nuimages-pretrained.pth
+      neck:
+        type: GeneralizedLSSFPN
+        in_channels: [192, 384, 768]
+        out_channels: 256
+        start_level: 0
+        num_outs: 3
+        norm_cfg:
+          type: BN2d
+          requires_grad: true
+        act_cfg:
+          type: ReLU
+          inplace: true
+        upsample_cfg:
+          mode: bilinear
+          align_corners: false
+      vtransform:
+        # Isolated adapter; original lss.py/base.py/depth_lss.py stay untouched.
+        type: AGHRILSSTransform
+        in_channels: 256
+        out_channels: 80
+        image_size: ${image_size}
+        feature_size: ${[image_size[0] // 8, image_size[1] // 8]}
+        xbound: [-24.0, 24.0, 0.3]
+        ybound: [-24.0, 24.0, 0.3]
+        zbound: [-10.0, 10.0, 20.0]
+        # Camera-frame human-centre depth was <=19.2 m in both training PKLs.
+        dbound: [0.5, 24.5, 0.5]
+        downsample: 2
+        # Preserve the completed raw-image pinhole baseline by default.
+        distortion_aware: false
+        distortion_iterations: 10
+    lidar:
+      voxelize:
+        max_num_points: 10
+        point_cloud_range: ${point_cloud_range}
+        voxel_size: ${voxel_size}
+        max_voxels: [120000, 160000]
+      backbone:
+        type: SparseEncoder
+        in_channels: 5
+        sparse_shape: [640, 640, 41]
+        output_channels: 128
+        order: [conv, norm, act]
+        encoder_channels:
+          - [16, 16, 32]
+          - [32, 32, 64]
+          - [64, 64, 128]
+          - [128, 128]
+        encoder_paddings:
+          - [0, 0, 1]
+          - [0, 0, 1]
+          - [0, 0, [1, 1, 0]]
+          - [0, 0]
+        block_type: basicblock
+  fuser:
+    type: ConvFuser
+    in_channels: [80, 256]
+    out_channels: 256
+  decoder:
+    backbone:
+      type: SECOND
+      in_channels: 256
+      out_channels: [128, 256]
+      layer_nums: [5, 5]
+      layer_strides: [1, 2]
+      norm_cfg:
+        type: BN
+        eps: 0.001
+        momentum: 0.01
+      conv_cfg:
+        type: Conv2d
+        bias: false
+    neck:
+      type: SECONDFPN
+      in_channels: [128, 256]
+      out_channels: [256, 256]
+      upsample_strides: [1, 2]
+      norm_cfg:
+        type: BN
+        eps: 0.001
+        momentum: 0.01
+      upsample_cfg:
+        type: deconv
+        bias: false
+      use_conv_for_no_stride: true
+  heads:
+    map: null
+    object:
+      type: TransFusionHead
+      num_proposals: 200
+      auxiliary: true
+      in_channels: 512
+      hidden_channel: 128
+      num_classes: 1
+      num_decoder_layers: 1
+      num_heads: 8
+      nms_kernel_size: 3
+      ffn_channel: 256
+      dropout: 0.1
+      bn_momentum: 0.1
+      activation: relu
+      train_cfg:
+        dataset: AGHRI
+        point_cloud_range: ${point_cloud_range}
+        grid_size: [640, 640, 41]
+        voxel_size: ${voxel_size}
+        out_size_factor: 8
+        gaussian_overlap: 0.1
+        min_radius: 2
+        pos_weight: -1
+        code_weights: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2]
+        assigner:
+          type: HungarianAssigner3D
+          iou_calculator:
+            type: BboxOverlaps3D
+            coordinate: lidar
+          cls_cost:
+            type: FocalLossCost
+            gamma: 2.0
+            alpha: 0.25
+            weight: 0.15
+          reg_cost:
+            type: BBoxBEVL1Cost
+            weight: 0.25
+          iou_cost:
+            type: IoU3DCost
+            weight: 0.25
+      test_cfg:
+        dataset: AGHRI
+        grid_size: [640, 640, 41]
+        out_size_factor: 8
+        voxel_size: ${voxel_size[:2]}
+        pc_range: ${point_cloud_range[:2]}
+        nms_type: null
+      common_heads:
+        center: [2, 2]
+        height: [1, 2]
+        dim: [3, 2]
+        rot: [2, 2]
+        vel: [2, 2]
+      bbox_coder:
+        type: TransFusionBBoxCoder
+        pc_range: ${point_cloud_range[:2]}
+        post_center_range: ${point_cloud_range}
+        score_threshold: 0.0
+        out_size_factor: 8
+        voxel_size: ${voxel_size[:2]}
+        code_size: 10
+      loss_cls:
+        type: FocalLoss
+        use_sigmoid: true
+        gamma: 2.0
+        alpha: 0.25
+        reduction: mean
+        loss_weight: 1.0
+      loss_heatmap:
+        type: GaussianFocalLoss
+        reduction: mean
+        loss_weight: 1.0
+      loss_bbox:
+        type: L1Loss
+        reduction: mean
+        loss_weight: 0.25
+
+optimizer:
+  type: AdamW
+  # Four GPUs x one sample/GPU: conservative linear-scaled starting LR.
+  lr: 5.0e-5
+  weight_decay: 0.01
+
+optimizer_config:
+  grad_clip:
+    max_norm: 35
+    norm_type: 2
+
+lr_config:
+  policy: CosineAnnealing
+  warmup: linear
+  warmup_iters: 500
+  warmup_ratio: 0.33333333
+  min_lr_ratio: 0.001
+
+momentum_config: null
+max_epochs: 20
+runner:
+  type: CustomEpochBasedRunner
+  max_epochs: ${max_epochs}
+
+checkpoint_config:
+  interval: 1
+  # Keep every epoch_N.pth checkpoint. A negative value disables automatic
+  # removal of older checkpoints in MMCV's CheckpointHook.
+  max_keep_ckpts: -1
+
+# Print rank-0 training metrics frequently enough to make progress visible in
+# the Slurm output while keeping the log reasonably compact.
+log_config:
+  interval: 10
+  hooks:
+    -
+      type: TextLoggerHook
+
+evaluation:
+  interval: 1
+  save_best: aghri_mAP
+  rule: greater
+
+find_unused_parameters: true
+load_from: null
+resume_from: null

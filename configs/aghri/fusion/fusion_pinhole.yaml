@@ -1,0 +1,7 @@
+# F1: public experiment. External camera and LiDAR checkpoints are selected
+# by Swin init_cfg and the launcher's compatible-weight loader option.
+model:
+  encoders:
+    camera:
+      vtransform:
+        distortion_aware: false
