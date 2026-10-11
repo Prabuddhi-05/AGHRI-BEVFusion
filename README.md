@@ -18,7 +18,6 @@ AGHRI is a multimodal dataset for robot perception of humans in agricultural and
 
 - [Original AGHRI dataset](https://doi.org/10.24385/lincoln.32982638) and [submitted manuscript/preprint](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7360013)
 - [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools) — AGHRI-to-nuScenes-style conversion and PKL generation
-- [AGHRI-nuScenes-release](https://github.com/Prabuddhi-05/AGHRI-nuScenes-release) — prepared AGHRI-to-nuScenes-style data and PKLs
 - [Original BEVFusion](https://github.com/mit-han-lab/bevfusion) — upstream framework, installation guidance, and pretrained-model information
 
 ## What is Included
@@ -54,31 +53,38 @@ The `weights/` folder contains five AGHRI checkpoints configured for Git LFS; se
 
 ## AGHRI Data Setup
 
-Prepare the converted dataset using [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools), or obtain the prepared [AGHRI-nuScenes-release](https://github.com/Prabuddhi-05/AGHRI-nuScenes-release).
+Download the original AGHRI dataset from the [University of Lincoln record](https://doi.org/10.24385/lincoln.32982638). Use [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools) to convert it and generate the PKLs. Run these preparation commands in the tools repository's Python environment, following its README for extraction layout and `paths.env` setup:
 
-The expected layout is:
+```bash
+cp paths.env.example paths.env       # edit the five paths for your system
+./scripts/discover.sh                # requires a PASS for 65 scenes
+./scripts/preview_conversion.sh
+./scripts/run_conversion.sh
+./scripts/generate_pkls.sh all
+```
+
+`AGHRI_DATASET_ROOT` in `paths.env` is the converted dataset root. `AGHRI_PKL_OUTPUT_ROOT` is the generated PKL root. Their expected layout is:
 
 ```text
-AGHRI-nuScenes-release/
-├── dataset/
-│   ├── samples/
-│   ├── sweeps/
-│   ├── v1.0-aghri/
-│   └── metadata/
-└── pkls/
-    ├── full/
-    │   └── pkls/
-    ├── zed_lidar/
-    │   └── pkls/
-    └── fisheye_lidar/
-        └── pkls/
+/path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full/
+├── samples/
+├── sweeps/
+├── v1.0-aghri/
+└── metadata/synchronization/
+
+/path/to/aghri_pkls/
+├── full/pkls/
+├── zed_lidar/pkls/
+└── fisheye_lidar/pkls/
 ```
+
+The conversion creates `samples/` and `sweeps/`; the PKL generator reads the converted JSON tables and synchronization metadata. Run BEVFusion in its own compatible environment after data preparation. Preserve the generated directory structure when relocating the dataset. A fresh PKL generation may not be byte-identical to earlier archived PKLs; check calibration and PKL provenance if comparing exact published results.
 
 Pass the dataset and PKL roots to the launcher:
 
 ```text
---dataset-root /path/to/AGHRI-nuScenes-release/dataset
---pkl-root /path/to/AGHRI-nuScenes-release/pkls
+--dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full
+--pkl-root /path/to/aghri_pkls
 ```
 
 Fisheye camera and fusion experiments use `fisheye_lidar/pkls/`.
@@ -150,7 +156,7 @@ Experiment definitions and geometry settings are in [EXPERIMENTS.md](docs/EXPERI
 
 ## Quick Start
 
-Run commands from the repository root. Replace the example paths with your assembled AGHRI release.
+Run commands from the repository root. Replace the example paths with your generated dataset and PKL roots.
 
 Add `--dry-run` first if you want to inspect the selected config, PKLs, checkpoints, and underlying command without launching a job.
 
@@ -160,8 +166,8 @@ Add `--dry-run` first if you want to inspect the selected config, PKLs, checkpoi
 
 ```bash
 python tools/run_aghri.py train --experiment C2-DA \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --pkl-root /path/to/aghri_pkls \
   --run-dir runs/C2-DA \
   --gpus 4
 ```
@@ -172,8 +178,8 @@ python tools/run_aghri.py train --experiment C2-DA \
 
 ```bash
 python tools/run_aghri.py train --experiment L2 \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --pkl-root /path/to/aghri_pkls \
   --run-dir runs/L2 \
   --gpus 4
 ```
@@ -188,8 +194,8 @@ For example, `D-F4` uses the AGHRI `C2-DA` camera checkpoint together with the A
 python tools/run_aghri.py train --experiment D-F4 \
   --camera-checkpoint weights/C2-DA_best_epoch_20.pth \
   --lidar-checkpoint weights/L2_best_epoch_1.pth \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --pkl-root /path/to/aghri_pkls \
   --run-dir runs/D-F4 \
   --gpus 4
 ```
@@ -206,8 +212,8 @@ Choose the validation or test split explicitly:
 python tools/run_aghri.py eval --experiment D-F4 \
   --checkpoint weights/D-F4_best_epoch_1.pth \
   --split test \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --pkl-root /path/to/AGHRI-nuScenes-release/pkls \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --pkl-root /path/to/aghri_pkls \
   --gpus 1
 ```
 
@@ -232,8 +238,8 @@ torchpack dist-run -np 1 python tools/visualize_aghri.py \
   --mode pred \
   --checkpoint weights/D-F4_best_epoch_1.pth \
   --split test \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --ann-file /path/to/AGHRI-nuScenes-release/pkls/fisheye_lidar/pkls/aghri_fisheye_lidar_infos_test.pkl \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --ann-file /path/to/aghri_pkls/fisheye_lidar/pkls/aghri_fisheye_lidar_infos_test.pkl \
   --out-dir output/aghri_D-F4_test \
   --max-samples 10
 ```

@@ -18,13 +18,13 @@ The upstream [BEVFusion repository](https://github.com/mit-han-lab/bevfusion) pr
 
 ## Data Paths
 
-The launcher expects an assembled [AGHRI-nuScenes-release](https://github.com/Prabuddhi-05/AGHRI-nuScenes-release).
+Download the original AGHRI dataset from the [University of Lincoln record](https://doi.org/10.24385/lincoln.32982638), then run discovery, conversion, and PKL generation with [AGHRI-nuScenes-tools](https://github.com/Prabuddhi-05/AGHRI-nuScenes-tools). The tools README documents the source extraction layout and `paths.env` settings. The launcher reads the generated dataset and PKL roots.
 
-Use:
+Use the tools repository's `AGHRI_DATASET_ROOT` and `AGHRI_PKL_OUTPUT_ROOT` values:
 
 ```text
---dataset-root /path/to/AGHRI-nuScenes-release/dataset
---pkl-root /path/to/AGHRI-nuScenes-release/pkls
+--dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full
+--pkl-root /path/to/aghri_pkls
 ```
 
 Camera and fusion experiments use:
@@ -115,7 +115,7 @@ inside the selected run directory.
 The following example selects `F2`:
 
 ```bash
-python tools/run_aghri.py train --experiment F2   --dataset-root /path/to/AGHRI-nuScenes-release/dataset   --pkl-root /path/to/AGHRI-nuScenes-release/pkls   --run-dir runs/F2   --gpus 4   --dry-run
+python tools/run_aghri.py train --experiment F2   --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full   --pkl-root /path/to/aghri_pkls   --run-dir runs/F2   --gpus 4   --dry-run
 ```
 
 Remove `--dry-run` when you are ready to start training.
@@ -127,7 +127,7 @@ D-F experiments use AGHRI-trained camera and LiDAR branches.
 For example:
 
 ```bash
-python tools/run_aghri.py train --experiment D-F4   --camera-checkpoint weights/C2-DA_best_epoch_20.pth   --lidar-checkpoint weights/L2_best_epoch_1.pth   --dataset-root /path/to/AGHRI-nuScenes-release/dataset   --pkl-root /path/to/AGHRI-nuScenes-release/pkls   --run-dir runs/D-F4   --gpus 4   --dry-run
+python tools/run_aghri.py train --experiment D-F4   --camera-checkpoint weights/C2-DA_best_epoch_20.pth   --lidar-checkpoint weights/L2_best_epoch_1.pth   --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full   --pkl-root /path/to/aghri_pkls   --run-dir runs/D-F4   --gpus 4   --dry-run
 ```
 
 For D-F, the launcher first calls [`build_aghri_df_branch_init.py`](../tools/build_aghri_df_branch_init.py) to prepare the combined initialization checkpoint, then starts [`train_aghri.py`](../tools/train_aghri.py).
@@ -159,7 +159,7 @@ Use the validation split while selecting a model, and the held-out test split fo
 Example validation command:
 
 ```bash
-python tools/run_aghri.py eval --experiment F2   --checkpoint /path/to/F2-best.pth   --split val   --dataset-root /path/to/AGHRI-nuScenes-release/dataset   --pkl-root /path/to/AGHRI-nuScenes-release/pkls   --gpus 1   --dry-run
+python tools/run_aghri.py eval --experiment F2   --checkpoint /path/to/F2-best.pth   --split val   --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full   --pkl-root /path/to/aghri_pkls   --gpus 1   --dry-run
 ```
 
 Change:
@@ -210,8 +210,8 @@ torchpack dist-run -np 1 python tools/visualize_aghri.py \
   --mode pred \
   --checkpoint weights/D-F4_best_epoch_1.pth \
   --split test \
-  --dataset-root /path/to/AGHRI-nuScenes-release/dataset \
-  --ann-file /path/to/AGHRI-nuScenes-release/pkls/fisheye_lidar/pkls/aghri_fisheye_lidar_infos_test.pkl \
+  --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full \
+  --ann-file /path/to/aghri_pkls/fisheye_lidar/pkls/aghri_fisheye_lidar_infos_test.pkl \
   --out-dir output/aghri_D-F4_test \
   --max-samples 10
 ```

@@ -81,7 +81,7 @@ These are different from the original upstream initialization binaries.
 The same launcher is used for every experiment:
 
 ```bash
-python tools/run_aghri.py train --experiment ID   --dataset-root /path/to/AGHRI-nuScenes-release/dataset   --pkl-root /path/to/AGHRI-nuScenes-release/pkls   --run-dir runs/ID   --gpus 4   --dry-run
+python tools/run_aghri.py train --experiment ID   --dataset-root /path/to/aghri_nuscenes_run/AGHRI_nuScenes_camera_lidar_full   --pkl-root /path/to/aghri_pkls   --run-dir runs/ID   --gpus 4   --dry-run
 ```
 
 Use `--dry-run` to inspect the selected config, PKLs, initialization, and underlying command.
